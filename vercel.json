@@ -1,0 +1,9 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "rewrites": [
+    { "source": "/api/:path*", "destination": "/api/index.py" }
+  ],
+  "crons": [
+    { "path": "/api/cron/monitoramentos", "schedule": "0 0 * * *" }
+  ]
+}

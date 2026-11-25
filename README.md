@@ -1,83 +1,60 @@
-# Plataforma de Inteligência da Saúde Infantil
+# Caderneta Digital
 
-Aplicação complementar ao sistema relacional existente. O sistema de origem continua sendo a fonte oficial dos registros e envia eventos JSON por HTTP; esta plataforma mantém projeções mínimas no MongoDB e disponibiliza indicadores operacionais, monitoramento e resumos digitais de alta. Não acessa nem substitui o SQL Server.
+Aplicação complementar ao sistema relacional existente. A origem mantém os registros oficiais e envia eventos JSON por HTTP; a Caderneta Digital mantém projeções mínimas no MongoDB para inteligência, monitoramento e resumo de alta. Ela não acessa nem substitui o SQL Server.
 
-## Executar no Google Colab
+## Deploy Vercel
 
-Abra `Plataforma_Inteligencia_Saude_Infantil_Colab.ipynb` no Colab e execute as células em ordem. A célula de credenciais solicita separadamente a URI do MongoDB Atlas, a chave da API de integração e a senha inicial do administrador por entrada sem eco. Nenhuma credencial deve ser colocada no notebook ou nos arquivos gerados.
+O deploy usa Next.js para a interface e FastAPI como funções Python em `/api/*`, no mesmo domínio. MongoDB Atlas é a persistência única da aplicação, na base `caderneta_digital`. Configure no projeto Vercel estas variáveis em **Production** e **Preview**:
 
-A célula de conexão verifica o MongoDB e prepara índices no banco `inteligencia_saude_infantil`. API e Streamlit executam no runtime. A célula de túneis Cloudflare exibe URLs públicas efêmeras para demonstração; elas mudam ao reiniciar e não são adequadas a dados reais. Use apenas eventos sintéticos no Colab.
+```text
+MONGO_URI=<URI do Atlas>
+MONGO_DATABASE=caderneta_digital
+API_INTEGRATION_KEY=<chave aleatória com pelo menos 24 caracteres>
+SESSION_SECRET=<segredo aleatório com pelo menos 32 caracteres>
+APP_ADMIN_USERNAME=<usuário inicial>
+APP_ADMIN_PASSWORD=<senha inicial com pelo menos 12 caracteres>
+CRON_SECRET=<segredo aleatório do cron>
+```
+
+Configure os mesmos valores a partir de um ambiente local seguro com `vercel env add`; nunca crie `.env` versionado nem cole segredos no notebook. `sample_mflix` e o SQL Server não são alterados. O Mongo cria as coleções ao receber dados e a API inicializa os índices.
 
 ## Executar localmente
 
-Requer Python 3.11 ou superior e uma instância MongoDB (por exemplo, Atlas). Crie um ambiente virtual e instale as dependências:
+Requer Node.js 22+, Python 3.11+ e MongoDB Atlas ou MongoDB local.
 
 ```bash
+npm ci
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
+npm run dev
 ```
 
-Configure variáveis no ambiente, sem gravá-las no Git:
+`npm run build` compila a interface Next.js. Testes da API: `python -m pytest -q tests`. A rota de saúde é `/api/health`; a documentação OpenAPI fica disponível em `/api/docs`.
 
-```text
-MONGO_URI=<URI MongoDB Atlas>
-MONGO_DATABASE=inteligencia_saude_infantil
-API_INTEGRATION_KEY=<chave aleatória independente>
-APP_ADMIN_USERNAME=<usuário inicial>
-APP_ADMIN_PASSWORD=<senha inicial com pelo menos 12 caracteres>
-```
+## Dados de demonstração
 
-Gere os módulos com as células 4 a 9 do notebook (ou execute o notebook completo), depois inicie em terminais separados:
+Com `MONGO_URI` e `SESSION_SECRET` no ambiente, a criação da base exclusiva e o seed de dados **fictícios** são explícitos:
 
 ```bash
-uvicorn api:app --host 127.0.0.1 --port 8000
-streamlit run app.py --server.address 127.0.0.1 --server.port 8501
+MONGO_DATABASE=caderneta_digital python scripts/seed_demo.py --confirmar-dados-sinteticos
 ```
 
-Documentação OpenAPI: `http://127.0.0.1:8000/docs`. Interface: `http://127.0.0.1:8501`.
+O seed é repetível, preserva coleções já existentes e não escreve em `sample_mflix`. Ele usa somente IDs e informações sintéticas. Para dados oficiais, a origem deve enviar registros pela API; não há importação direta do SQL Server.
 
 ## Integração
 
-Endpoints:
-
-- `GET /health`
+- `GET /api/health`
 - `POST /api/v1/integracao/registros`
 - `POST /api/v1/integracao/registros/lote`
 - `GET /api/v1/integracao/registros/{event_id}`
 
-Endpoints de integração exigem `X-API-Key`. Eventos repetidos com o mesmo `source_system` e `event_id` são idempotentes; reenvio igual registra duplicidade, conteúdo corrigido atualiza a versão e preserva observações de profissionais. Eventos antigos ficam no histórico e não substituem projeções mais recentes.
+Integração exige `X-API-Key`; login da interface usa sessão HttpOnly separada. Reenvios são idempotentes, correções preservam notas e eventos antigos não substituem projeções mais recentes. Consulte [CONTRATO_INTEGRACAO.md](CONTRATO_INTEGRACAO.md). O adaptador reconhece colunas reais da Caderneta, incluindo `peso_g`, `comprimento_cm`, `perimetro_cefalico_cm`, `ig_semanas`, `data_alta`, `realizada` e os códigos de triagem `BIOLOGICA`, `AUDITIVA`, `REFLEXO_VERMELHO`, `OXIMETRIA`.
 
-Exemplo de evento (campos ilustrativos, não pressupõem colunas do banco de origem):
+## Notebook Colab
 
-```json
-{
-  "event_id": "evt-001",
-  "source_system": "sistema_relacional",
-  "schema_version": "1.0",
-  "event_type": "alta_maternidade",
-  "entity_type": "crianca",
-  "entity_external_id": "CRI-001",
-  "child_external_id": "CRI-001",
-  "unit_external_id": "UBS-001",
-  "occurred_at": "2026-11-20T14:30:00-03:00",
-  "data": {
-    "data_alta": "2026-11-20",
-    "unidade_hospitalar": "Maternidade Exemplo"
-  }
-}
-```
+`Caderneta_Digital_Colab.ipynb` mantém uma demonstração Streamlit + FastAPI com túnel Cloudflare. Esse modo é efêmero e destinado a dados sintéticos; não é a hospedagem de produção Vercel.
 
-Tipos aceitos: `gestacao`, `nascimento`, `internacao_neonatal`, `alta_maternidade`, `triagem`, `consulta`, `vacinacao` e `agendamento`. Identificadores de evento, sistema, entidade e data/hora com fuso são obrigatórios. `child_external_id`, `unit_external_id` e campos em `data` podem variar segundo o evento. O adaptador em `services.py` mapeia aliases comuns; ajuste `FIELD_ALIASES` conforme o contrato real da origem. `data` mantém somente a projeção necessária e o evento de origem recebe controle de versão.
+## Segurança e limites
 
-## Dados e regras
-
-Coleções: `criancas`, `gestacoes`, `eventos_integracao`, `recebimentos_integracao`, `monitoramentos`, `resumos_alta`, `auditoria`, `usuarios` e `regras_monitoramento`.
-
-A ausência de evento de triagem é exibida como **sem informação recebida**, nunca como confirmação de não realização. Regras de prazo após alta e desatualização começam desativadas até configuração e validação por profissionais do serviço. Prioridade é classificação operacional, não diagnóstico nem protocolo clínico. O resumo só exibe conteúdo recebido e destaca campos ausentes.
-
-## Testes e limites
-
-A última célula executa testes com `mongomock`; ela não grava no Atlas. Inclui autenticação, idempotência, correções, eventos fora de ordem, preservação de notas, pendências sem informação e geração de PDF. Não usa dados reais.
-
-Este projeto é um protótipo de integração e demonstração, não um sistema clínico de produção. Antes de qualquer uso real, valide contrato, perfis, retenção, criptografia, controles de acesso, protocolos, requisitos legais e LGPD com as equipes responsáveis. O Colab e túneis públicos efêmeros não devem receber dados pessoais ou clínicos reais.
+Ausência de evento é **sem informação recebida**, nunca confirmação de não realização. Regras com prazo começam desligadas e exigem intervalos aprovados por profissionais. Prioridades são operacionais, não diagnósticos. Não use dados reais em demonstrações/Colab; valide LGPD, retenção, controle de acesso e protocolos antes de qualquer uso clínico.

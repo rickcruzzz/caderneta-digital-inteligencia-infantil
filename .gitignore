@@ -1,9 +1,14 @@
 .venv/
+node_modules/
+.next/
+out/
+.vercel/
+*.tsbuildinfo
 __pycache__/
 *.py[cod]
 .env
 .env.*
 !.env.example
 .streamlit/secrets.toml
-plataforma_saude_infantil_app/
+caderneta_digital_app/
 *.log
