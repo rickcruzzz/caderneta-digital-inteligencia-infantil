@@ -234,4 +234,3 @@ Leia também o [contrato de integração](../CONTRATO_INTEGRACAO.md).
 - [ ] Testes Python, typecheck e build foram executados.
 - [ ] Nenhuma credencial aparece em slide, terminal, navegador ou GitHub.
 - [ ] Existe um plano alternativo caso a internet ou o Atlas falhe.
-

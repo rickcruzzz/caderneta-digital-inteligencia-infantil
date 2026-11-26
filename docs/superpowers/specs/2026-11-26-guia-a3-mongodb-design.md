@@ -42,4 +42,3 @@ O atalho instalado será renomeado para identificar a versão MongoDB e abrirá 
 - Suite Python, typecheck e build passam.
 - Nenhum segredo entra no Git.
 - Repositório remoto recebe os commits e o link final é informado.
-

@@ -74,4 +74,3 @@
 - [ ] **Step 3: Validar arquivos `.desktop` e abrir o projeto correto**
 - [ ] **Step 4: Executar suite Python, typecheck, build e varredura de segredos**
 - [ ] **Step 5: Revisar diff, commit final e push para `origin/main`**
-
