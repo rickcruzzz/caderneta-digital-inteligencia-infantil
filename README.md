@@ -2,6 +2,10 @@
 
 Aplicação complementar ao sistema relacional existente. A origem mantém os registros oficiais e envia eventos JSON por HTTP; a Caderneta Digital mantém projeções mínimas no MongoDB para inteligência, monitoramento e resumo de alta. Ela não acessa nem substitui o SQL Server.
 
+## Apresentação A3
+
+O [guia de apresentação e ensaio](docs/09-entrega-e-ensaio.md) divide a versão MongoDB em seis partes para a enquete do grupo, com falas sugeridas, demonstração e checklist final.
+
 ## Deploy Vercel
 
 O deploy usa Next.js para a interface e FastAPI como funções Python em `/api/*`, no mesmo domínio. MongoDB Atlas é a persistência única da aplicação, na base `caderneta_digital`. Configure no projeto Vercel estas variáveis em **Production** e **Preview**:
@@ -16,7 +20,7 @@ APP_ADMIN_PASSWORD=<senha inicial com pelo menos 12 caracteres>
 CRON_SECRET=<segredo aleatório do cron>
 ```
 
-Configure os mesmos valores a partir de um ambiente local seguro com `vercel env add`; nunca crie `.env` versionado nem cole segredos no notebook. `sample_mflix` e o SQL Server não são alterados. O Mongo cria as coleções ao receber dados e a API inicializa os índices.
+Configure os mesmos valores a partir de um ambiente local seguro com `vercel env add`; nunca crie `.env` versionado nem cole segredos no notebook. O ambiente local também aceita `MONGODB_URI` como alias de `MONGO_URI`. `sample_mflix` e o SQL Server não são alterados. O Mongo cria as coleções ao receber dados e a API inicializa os índices.
 
 ## Executar localmente
 
