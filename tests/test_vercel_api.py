@@ -4,6 +4,7 @@ import mongomock
 import pytest
 from fastapi.testclient import TestClient
 
+import api.database as database_config
 import api.index as api
 
 
@@ -208,3 +209,25 @@ def test_summary_validation_uses_authenticated_professional_identity(app_client)
     accepted = client.patch("/api/v1/resumos-alta/summary-test-1/validar", json={"professional": "forged-name"})
     assert accepted.status_code == 200
     assert database.resumos_alta.find_one({"document_id": "summary-test-1"})["validated_by"] == "professional-test"
+
+
+def test_mongo_uri_prefers_official_deploy_variable(monkeypatch):
+    monkeypatch.setenv("MONGO_URI", "mongodb://official.example/caderneta")
+    monkeypatch.setenv("MONGODB_URI", "mongodb://local.example/caderneta")
+
+    assert database_config.get_mongo_uri() == "mongodb://official.example/caderneta"
+
+
+def test_mongo_uri_accepts_existing_local_variable(monkeypatch):
+    monkeypatch.delenv("MONGO_URI", raising=False)
+    monkeypatch.setenv("MONGODB_URI", "mongodb://local.example/caderneta")
+
+    assert database_config.get_mongo_uri() == "mongodb://local.example/caderneta"
+
+
+def test_mongo_uri_missing_error_never_contains_secret_values(monkeypatch):
+    monkeypatch.delenv("MONGO_URI", raising=False)
+    monkeypatch.delenv("MONGODB_URI", raising=False)
+
+    with pytest.raises(RuntimeError, match="MONGO_URI ou MONGODB_URI não configurada"):
+        database_config.get_mongo_uri()

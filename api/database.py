@@ -4,13 +4,17 @@ from functools import lru_cache
 from pymongo import ASCENDING, DESCENDING, MongoClient
 
 
+def get_mongo_uri() -> str:
+    uri = os.environ.get("MONGO_URI") or os.environ.get("MONGODB_URI")
+    if not uri:
+        raise RuntimeError("MONGO_URI ou MONGODB_URI não configurada.")
+    return uri
+
+
 @lru_cache(maxsize=1)
 def get_client() -> MongoClient:
-    uri = os.environ.get("MONGO_URI")
-    if not uri:
-        raise RuntimeError("MONGO_URI não configurada.")
     return MongoClient(
-        uri,
+        get_mongo_uri(),
         appname="CadernetaDigitalVercel",
         serverSelectionTimeoutMS=8000,
         connectTimeoutMS=8000,
